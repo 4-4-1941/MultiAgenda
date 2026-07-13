@@ -1,1 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Agenda · Recordatorio · Citas</title>
+<meta name="description" content="Directorio de pacientes y recordatorios por WhatsApp">
+<meta name="theme-color" content="#1a4a4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agenda Citas">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap');
 
+  :root {
+    --teal-deep: #1a4a4a;
+    --teal-mid: #2d6e6e;
+    --teal-soft: #4a9494;
+    --teal-pale: #d0eaea;
+    --teal-ghost: #eef7f7;
+    --amber: #e8a020;
+    --amber-pale: #fdf3dc;
+    --red-alert: #c0392b;
+    --red-pale: #fdecea;
+    --green-ok: #1e7d4a;
+    --green-pale: #e6f5ed;
+    --text-primary: #0f2c2c;
+    --text-secondary: #3d6060;
+    --text-muted: #7a9e9e;
+    --border: #c5dede;
+    --surface: #ffffff;
+    --bg: #f2f9f9;
+    --shadow: 0 2px 12px rgba(26,74,74,0.10);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--teal-deep);
+    color: white;
+    padding: 0 20px;
+    height: 58px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .topbar-brand svg { opacity: 0.9; }
+  .brand-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.02em;
+  }
+  .brand-sub {
+    font-size: 0.68rem;
+    opacity: 0.6;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .topbar-actions { display: flex; gap: 8px; }
+  .btn-icon {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    color: white;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+  }
+  .btn-icon:hover { background: rgba(255,255,255,0.22); }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 2px solid var(--border);
+    padding: 0 20px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 12px 18px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab:hover { color: var(--teal-mid); }
+  .tab.active {
+    color: var(--teal-deep);
+    border-bottom-color: var(--teal-deep);
+    font-weight: 600;
+  }
+  .tab-badge {
+    background: var(--amber);
+    color: white;
+    border-radius: 10px;
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    font-weight: 700;
+  }
+
+  /* ─── LAYOUT ─── */
+  .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* ─── FORMS ─── */
+  .form-group { margin-bottom: 14px; }
+  label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--teal-soft);
+    box-shadow: 0 0 0 3px rgba(74,148,148,0.12);
+  }
+  textarea { resize: vertical; min-height: 70px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    padding: 9px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--teal-deep);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--teal-mid); }
+  .btn-secondary {
+    background: var(--teal-ghost);
+    color: var(--teal-deep);
+    border: 1.5px solid var(--teal-pale);
+  }
+  .btn-secondary:hover { background: var(--teal-pale); }
+  .btn-whatsapp {
+    background: #25D366;
+    color: white;
+  }
+  .btn-whatsapp:hover { background: #1da851; }
+  .btn-danger {
+    background: var(--red-pale);
+    color: var(--red-alert);
+    border: 1px solid #f5c6c2;
+  }
+  .btn-danger:hover { background: #fad7d4; }
+  .btn-sm { padding: 5px 11px; font-size: 0.78rem; }
+  .btn-full { width: 100%; justify-content: center; }
+
+  /* ─── PATIENT LIST ─── */
+  .patient-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    background: var(--surface);
+    transition: box-shadow 0.15s;
+  }
+  .patient-item:hover { box-shadow: var(--shadow); }
+  .patient-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--teal-pale);
+    color: var(--teal-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .patient-info { flex: 1; min-width: 0; }
+  .patient-name { font-weight: 600; font-size: 0.92rem; }
+  .patient-phone { font-size: 0.78rem; color: var(--text-muted); margin-top: 1px; }
+  .patient-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+    background: var(--teal-ghost);
+    color: var(--teal-mid);
+    border: 1px solid var(--teal-pale);
+  }
+  .tag.tdah { background: #fff3e0; color: #e65100; border-color: #ffcc80; }
+  .tag.ansiedad { background: #ede7f6; color: #4527a0; border-color: #ce93d8; }
+  .tag.resistencia { background: #fce4ec; color: #880e4f; border-color: #f48fb1; }
+  .patient-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  /* ─── APPOINTMENT LIST ─── */
+  .apt-item {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .apt-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+  }
+  .apt-date-block {
+    background: var(--teal-deep);
+    color: white;
+    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .apt-day { font-size: 1.2rem; font-weight: 700; line-height: 1; }
+  .apt-month { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; }
+  .apt-info { flex: 1; }
+  .apt-patient-name { font-weight: 600; font-size: 0.95rem; }
+  .apt-time { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
+  .apt-reminders {
+    padding: 8px 16px 12px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .reminder-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1.5px solid;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .reminder-pill.pending-24 {
+    background: var(--amber-pale);
+    color: #8a5a00;
+    border-color: #f0c060;
+  }
+  .reminder-pill.pending-1 {
+    background: var(--red-pale);
+    color: var(--red-alert);
+    border-color: #f5a09a;
+  }
+  .reminder-pill.sent {
+    background: var(--green-pale);
+    color: var(--green-ok);
+    border-color: #80cfa0;
+    opacity: 0.7;
+    cursor: default;
+  }
+  .reminder-pill.now {
+    background: #e8f4fd;
+    color: #1565c0;
+    border-color: #90caf9;
+  }
+  .reminder-pill.pay {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-color: #81c784;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .status-badge.realizada { background: var(--green-pale); color: var(--green-ok); }
+  .status-badge.cancelada { background: var(--red-pale); color: var(--red-alert); }
+  .status-badge.no_asistio { background: var(--amber-pale); color: #8a5a00; }
+  .status-badge.pendiente { background: #eceff1; color: #607d8b; }
+  .history-item {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+  }
+  .history-info { flex: 1; }
+  .history-name { font-weight: 600; font-size: 0.9rem; }
+  .history-date { font-size: 0.78rem; color: var(--text-muted); }
+  .reminder-pill:hover:not(.sent) { transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+  /* ─── DASHBOARD ─── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    color: var(--teal-deep);
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.73rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .today-apt {
+    background: var(--teal-ghost);
+    border: 1.5px solid var(--teal-pale);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .today-apt-left .name { font-weight: 600; font-size: 0.9rem; }
+  .today-apt-left .time { font-size: 0.78rem; color: var(--text-muted); }
+  
+  .alert-banner {
+    background: var(--amber-pale);
+    border: 1.5px solid #f0c060;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 0.83rem;
+    color: #6b4000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+
+  /* ─── PIN LOCK ─── */
+  .pin-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--teal-deep);
+    z-index: 999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+  }
+  .pin-screen.active { display: flex; }
+  .pin-logo {
+    font-family: 'Playfair Display', serif;
+    color: white;
+    font-size: 1.6rem;
+    text-align: center;
+    opacity: 0.95;
+  }
+  .pin-sub { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 4px; }
+  .pin-dots {
+    display: flex;
+    gap: 14px;
+  }
+  .pin-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.5);
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .pin-dot.filled { background: white; border-color: white; }
+  .pin-error { color: #ff8a80; font-size: 0.82rem; min-height: 1.2em; }
+  .pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 72px);
+    gap: 12px;
+  }
+  .pin-btn {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.08);
+    color: white;
+    font-size: 1.4rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.1s, transform 0.08s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin-btn:active { background: rgba(255,255,255,0.22); transform: scale(0.93); }
+  .pin-btn.zero { grid-column: 2; }
+  .pin-btn.del { background: transparent; border-color: transparent; font-size: 1.1rem; }
+  .pin-setup-hint { color: rgba(255,255,255,0.5); font-size: 0.75rem; text-align: center; max-width: 240px; }
+  .pin-link {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    background: none; border: none;
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .empty-text { font-size: 0.88rem; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,30,30,0.5);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-header {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-title { font-weight: 700; font-size: 1rem; }
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    line-height: 1;
+    padding: 2px 6px;
+  }
+  .modal-body { padding: 20px; }
+  .modal-footer {
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  /* ─── SEARCH ─── */
+  .search-bar {
+    position: relative;
+    margin-bottom: 14px;
+  }
+  .search-bar input {
+    padding-left: 34px;
+  }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  /* ─── WHATSAPP MSG PREVIEW ─── */
+  .wa-preview {
+    background: #e9f5de;
+    border-radius: 10px 10px 10px 2px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    color: #1a2a1a;
+    margin: 12px 0;
+    border: 1px solid #c8e6a0;
+    line-height: 1.5;
+  }
+  .wa-preview-label { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ─── AUTOCOMPLETE ─── */
+  .autocomplete-wrap { position: relative; }
+  .autocomplete-input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .autocomplete-input:focus {
+    border-color: var(--teal-soft);
+    box-shadow: 0 0 0 3px rgba(74,148,148,0.12);
+  }
+  .autocomplete-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0; right: 0;
+    background: var(--surface);
+    border: 1.5px solid var(--teal-pale);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 24px rgba(26,74,74,0.15);
+    z-index: 300;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+  }
+  .autocomplete-list.open { display: block; }
+  .autocomplete-item {
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--teal-ghost);
+    transition: background 0.1s;
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.selected { background: var(--teal-ghost); }
+  .autocomplete-item .ac-name { font-weight: 600; color: var(--text-primary); }
+  .autocomplete-item .ac-phone { font-size: 0.75rem; color: var(--text-muted); }
+  .autocomplete-item .ac-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--teal-pale);
+    color: var(--teal-deep);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.75rem; flex-shrink: 0;
+  }
+  .autocomplete-empty {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    text-align: center;
+  }
+  .selected-patient-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--teal-ghost);
+    border: 1.5px solid var(--teal-pale);
+    border-radius: var(--radius-sm);
+    padding: 7px 12px;
+    margin-top: 6px;
+  }
+  .selected-patient-chip .chip-name { font-weight: 600; font-size: 0.88rem; flex: 1; }
+  .chip-clear {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 1rem; padding: 0 2px;
+  }
+
+  /* ─── VCARD ─── */
+  .vcf-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--teal-mid);
+    background: none;
+    border: 1.5px dashed var(--teal-pale);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    margin-top: 6px;
+    transition: background 0.15s;
+  }
+  .vcf-btn:hover { background: var(--teal-ghost); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    .form-row { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .patient-actions { flex-direction: column; }
+    .topbar { padding: 0 12px; }
+    .page { padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PIN LOCK SCREEN -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-logo">
+    🗓️ Agenda · Recordatorio · Citas
+    <div class="pin-sub">Acceso seguro</div>
+  </div>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <div class="pin-pad">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn zero" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-setup-hint" id="pin-hint"></div>
+  <button class="pin-link" id="pin-reset-btn" onclick="pinReset()" style="display:none">¿Olvidaste tu PIN? Restablecer</button>
+</div>
+
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+ 
